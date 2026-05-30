@@ -14,7 +14,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'insights', label: 'Sprint Insights', icon: Layers },
-    { id: 'coral-sql', label: 'Coral SQL Sandbox', icon: Terminal },
+    // { id: 'coral-sql', label: 'Coral SQL Sandbox', icon: Terminal },
     { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
     { id: 'workload', label: 'Team Workload', icon: Users },
     { id: 'chat', label: 'AI Chat Ops', icon: MessageSquare },

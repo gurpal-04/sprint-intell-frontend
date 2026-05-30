@@ -4,7 +4,7 @@ const SprintContext = createContext();
 
 export const useSprint = () => useContext(SprintContext);
 
-const BACKEND_URL = "http://localhost:5001"; // Ensure this matches your backend server URL and port
+const BACKEND_URL = "https://sprint-intell-backend.onrender.com";
 
 export const SprintProvider = ({ children }) => {
   const [sprintData, setSprintData] = useState(null);

@@ -12,10 +12,10 @@ export default function Header() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs bg-indigo-500/10 text-indigo-300 font-mono font-medium px-2 py-0.5 rounded border border-indigo-500/20">
-              Sprint 24
+              Sprint 1
             </span>
             <span className="text-slate-500 text-xs">|</span>
-            <span className="text-slate-400 text-xs font-medium">May 15 - May 22</span>
+            <span className="text-slate-400 text-xs font-medium">May 24 - May 31</span>
           </div>
           <h2 className="text-sm font-semibold text-gray-200 mt-0.5 truncate max-w-[280px]">
             {sprintData?.scenarioDescription || "Sprint Intelligence Control"}
@@ -35,7 +35,7 @@ export default function Header() {
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
         </button>
 
-        {error ? (
+        {/* {error ? (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
             <AlertCircle className="w-3.5 h-3.5 animate-pulse" />
             <span className="font-mono font-medium text-[10px]">API OFFLINE</span>
@@ -45,7 +45,7 @@ export default function Header() {
             <Cpu className="w-3.5 h-3.5" />
             <span className="font-mono font-medium text-[10px]">API ACTIVE</span>
           </div>
-        )}
+        )} */}
       </div>
     </header>
   );

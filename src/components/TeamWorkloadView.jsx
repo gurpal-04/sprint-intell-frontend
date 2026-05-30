@@ -126,7 +126,7 @@ export default function TeamWorkloadView() {
                   <div className="flex items-center gap-3">
                     <img src={eng.avatar} alt={eng.name} className="w-11 h-11 rounded-full object-cover border-2 border-slate-800 shadow-sm" />
                     <div>
-                      <h3 className="text-sm font-bold text-slate-100 leading-none">{eng.name}</h3>
+                      <h3 className="text-sm font-bold text-slate-100 leading-none truncate">{eng.name}</h3>
                       <span className="text-[11px] text-slate-400 inline-block mt-1 font-mono">{eng.handle}</span>
                     </div>
                   </div>
