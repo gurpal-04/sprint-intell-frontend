@@ -20,43 +20,29 @@ export const SprintProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch dynamic live metrics, issues, pull requests, team allocations, timeline, blockers and slack users
-      const [overviewRes, issuesRes, prsRes, teamRes, timelineRes, blockersRes, usersRes] = await Promise.all([
-        fetch(`${BACKEND_URL}/api/sprint/overview`),
-        fetch(`${BACKEND_URL}/api/sprint/issues`),
-        fetch(`${BACKEND_URL}/api/sprint/pull-requests`),
-        fetch(`${BACKEND_URL}/api/sprint/team`),
-        fetch(`${BACKEND_URL}/api/sprint/timeline`),
-        fetch(`${BACKEND_URL}/api/sprint/blockers`),
-        fetch(`${BACKEND_URL}/api/slack/users`)
-      ]);
+      // Fetch all sprint metrics, issues, pull requests, team allocations, timeline, blockers and slack users consolidated
+      const response = await fetch(`${BACKEND_URL}/api/sprint/bootstrap`);
 
-      if (!overviewRes.ok || !issuesRes.ok || !prsRes.ok || !teamRes.ok || !timelineRes.ok || !blockersRes.ok) {
-        throw new Error("Failed to connect to backend Sprint Intelligence endpoints.");
+      if (!response.ok) {
+        throw new Error("Failed to connect to backend Sprint Intelligence bootstrap endpoint.");
       }
 
-      const overview = await overviewRes.json();
-      const issues = await issuesRes.json();
-      const prs = await prsRes.json();
-      const team = await teamRes.json();
-      const timeline = await timelineRes.json();
-      const blockers = await blockersRes.json();
+      const data = await response.json();
 
-      if (usersRes.ok) {
-        const users = await usersRes.json();
-        setSlackUsers(users);
+      if (data.slackUsers) {
+        setSlackUsers(data.slackUsers);
       }
 
       setSprintData({
-        healthScore: overview.healthScore,
-        scenarioName: overview.scenarioName,
-        scenarioDescription: overview.scenarioDescription,
-        metrics: overview.metrics,
-        issues,
-        prs,
-        team,
-        timeline,
-        blockers
+        healthScore: data.overview.healthScore,
+        scenarioName: data.overview.scenarioName,
+        scenarioDescription: data.overview.scenarioDescription,
+        metrics: data.overview.metrics,
+        issues: data.issues || [],
+        prs: data.prs || [],
+        team: data.team || [],
+        timeline: data.timeline || [],
+        blockers: data.blockers || []
       });
     } catch (err) {
       console.error("Backend server connection failed:", err.message);
