@@ -11,11 +11,12 @@ import {
 } from 'lucide-react';
 
 export default function SprintInsightsView() {
-  const { sprintData, loading, fetchIssuesData } = useSprint();
+  const { sprintData, loading, fetchIssuesData, fetchSlackLogsData } = useSprint();
   const [activeTab, setActiveTab] = useState('issues');
 
   useEffect(() => {
     fetchIssuesData();
+    fetchSlackLogsData();
   }, []);
 
   if (loading || !sprintData) {
@@ -27,16 +28,7 @@ export default function SprintInsightsView() {
     );
   }
 
-  const { issues, prs } = sprintData;
-
-  const slackChannelLogs = [
-    { channel: "#sprint-24-dev", sender: "@marcus", message: "Hey @sophia, I just pushed the PR for vector indices (PR-201). Mind giving it a quick look? It's key to testing the AI layer.", timestamp: "2026-05-22T10:15:00Z" },
-    { channel: "#sprint-24-dev", sender: "@sophia", message: "Sure @marcus, I'm auditing database index rules right now, but will review this afternoon.", timestamp: "2026-05-22T11:05:00Z" },
-    { channel: "#sprint-24-dev", sender: "@leo", message: "The dashboard design layout is merged (PR-203)! Let me know if you run into any visual glitches. Starting the timeline correlation widget next.", timestamp: "2026-05-22T18:10:00Z" },
-    { channel: "#sprint-24-dev", sender: "@marcus", message: "Pushed Gemini endpoint PR too (PR-202). I have 4 PRs open waiting for reviews. Can anyone help review the small DB indices audit?", timestamp: "2026-05-23T16:45:00Z" },
-    { channel: "#sprint-24-dev", sender: "@sophia", message: "Team, I am running a bit behind on review queues today. If anyone has bandwidth, please review Marcus's DB changes.", timestamp: "2026-05-24T09:30:00Z" },
-    { channel: "#ops-alerts", sender: "@github-actions", message: "[ALERT] Vercel deployment of operations-dashboard completed successfully. Commit: 9e24a10. Branch: main.", timestamp: "2026-05-22T18:05:00Z" }
-  ];
+  const { issues, prs, slackLogs } = sprintData;
 
   const getPriorityStyle = (priority) => {
     switch (priority) {
@@ -92,7 +84,7 @@ export default function SprintInsightsView() {
           }`}
         >
           <MessageSquare className="w-4 h-4" />
-          <span>Slack History ({slackChannelLogs.length})</span>
+          <span>Slack History ({slackLogs?.length || 0})</span>
         </button>
       </div>
 
@@ -217,37 +209,43 @@ export default function SprintInsightsView() {
 
         {activeTab === 'slack' && (
           <div className="p-6 space-y-4 max-h-[500px] overflow-y-auto bg-slate-950/20">
-            {slackChannelLogs.map((log, idx) => (
-              <div key={idx} className="flex gap-4 p-3.5 rounded-xl bg-slate-900/40 border border-border/40 hover:border-indigo-500/20 transition-all">
-                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-indigo-400 font-mono shadow-sm">
-                  {log.sender.substring(1, 3).toUpperCase()}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-200">{log.sender}</span>
-                      <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">
-                        {log.channel}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed font-sans">{log.message}</p>
-                  
-                  {/* Correlation Badge */}
-                  {(log.message.includes("PR-") || log.message.includes("deployment")) && (
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[9px] font-semibold font-mono">
-                        <Clock className="w-3 h-3" />
-                        Correlated to GitHub PR
-                      </span>
-                    </div>
-                  )}
-                </div>
+            {!slackLogs || slackLogs.length === 0 ? (
+              <div className="py-8 text-center text-slate-500 font-medium">
+                No real-time Slack messages found.
               </div>
-            ))}
+            ) : (
+              slackLogs.map((log, idx) => (
+                <div key={idx} className="flex gap-4 p-3.5 rounded-xl bg-slate-900/40 border border-border/40 hover:border-indigo-500/20 transition-all">
+                  <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-indigo-400 font-mono shadow-sm">
+                    {String(log.sender || "@U").substring(1, 3).toUpperCase()}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-200">{log.sender || "unknown"}</span>
+                        <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">
+                          {log.channel}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "now"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed font-sans">{log.message}</p>
+                    
+                    {/* Correlation Badge */}
+                    {log.message && (log.message.includes("PR-") || log.message.includes("deployment")) && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[9px] font-semibold font-mono">
+                          <Clock className="w-3 h-3" />
+                          Correlated to GitHub PR
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

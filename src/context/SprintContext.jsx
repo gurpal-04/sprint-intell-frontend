@@ -26,7 +26,8 @@ export const SprintProvider = ({ children }) => {
     prs: [],
     team: [],
     timeline: [],
-    blockers: []
+    blockers: [],
+    slackLogs: []
   });
   
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,8 @@ export const SprintProvider = ({ children }) => {
     prs: false,
     team: false,
     timeline: false,
-    blockers: false
+    blockers: false,
+    slackLogs: false
   });
 
   // Base loader helper
@@ -92,6 +94,31 @@ export const SprintProvider = ({ children }) => {
     // Lazy pull-requests load since it projects into issues or metrics
     await loadResource('prs', 'pull-requests');
     setLoading(false);
+  };
+
+  const fetchSlackLogsData = async (force = false) => {
+    if (loadedViews.slackLogs && !force) return;
+    setLoading(true);
+    try {
+      // Query Slack messages using Coral SQL
+      const response = await fetch(`${BACKEND_URL}/api/coral/sql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "SELECT channel, sender, message, timestamp FROM slack.messages ORDER BY timestamp DESC LIMIT 30" })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        setSprintData(prev => ({
+          ...prev,
+          slackLogs: result.rows || []
+        }));
+        setLoadedViews(prev => ({ ...prev, slackLogs: true }));
+      }
+    } catch (err) {
+      console.error("Failed to load slack logs:", err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchTeamData = async (force = false) => {
@@ -195,7 +222,7 @@ export const SprintProvider = ({ children }) => {
       setChatMessages(prev => [...prev, {
         id: Date.now() + 1,
         sender: "ai",
-        text: `### ⚠️ Connection Error\n\nI was unable to communicate with the Sprint Operations AI orchestrator. Please check if the Express backend server is running locally on port 5001.`,
+        text: `Something went wrong while processing the query. Please try again later.`,
         mode: "Offline Warning Mode",
         citations: [],
         time: new Date()
@@ -254,6 +281,7 @@ export const SprintProvider = ({ children }) => {
       resolveSlackMentions,
       fetchOverviewData,
       fetchIssuesData,
+      fetchSlackLogsData,
       fetchTeamData,
       fetchTimelineData,
       fetchBlockersData,
