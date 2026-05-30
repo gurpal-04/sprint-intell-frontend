@@ -11,6 +11,8 @@ import {
   RefreshCw,
   Link2
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function AIChatView() {
   const { 
@@ -71,59 +73,41 @@ I am your contextual engineering operations partner. I retrieve real-time docume
     navigator.clipboard.writeText(text);
     setCopiedText(true);
     setTimeout(() => setCopiedText(false), 2000);
-  };
-
-  const formatText = (text) => {
-    if (!text) return "";
-    
-    const resolvedText = resolveSlackMentions(text);
-    
-    // Incredibly simple markdown renderer for clean, professional bullet points, tables, and blocks
-    return resolvedText.split('\n').map((line, idx) => {
-      // Heading 3
-      if (line.startsWith('### ')) {
-        return <h3 key={idx} className="text-sm font-bold text-white mt-4 mb-2 flex items-center gap-1.5">{line.substring(4)}</h3>;
-      }
-      // Heading 4
-      if (line.startsWith('#### ')) {
-        return <h4 key={idx} className="text-xs font-bold text-indigo-300 mt-3 mb-1">{line.substring(5)}</h4>;
-      }
-      // Alert block
-      if (line.startsWith('> [!IMPORTANT]') || line.startsWith('> [!CAUTION]')) {
-        return null; // skipped header line, styling children instead
-      }
-      // Blockquotes / Warnings
-      if (line.startsWith('> ')) {
-        return (
-          <div key={idx} className="my-2.5 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-indigo-300 text-xs italic font-medium leading-relaxed">
-            {line.substring(2)}
-          </div>
-        );
-      }
-      // Unordered list
-      if (line.startsWith('* ') || line.startsWith('- ')) {
-        return (
-          <li key={idx} className="text-xs text-slate-300 ml-4 list-disc py-0.5 leading-relaxed">
-            {line.substring(2)}
-          </li>
-        );
-      }
-      // Tables formatting parser
-      if (line.startsWith('|')) {
-        if (line.includes('---') || line.includes(':---')) return null; // Divider rows skipped
-        const cells = line.split('|').map(c => c.trim()).filter(c => c !== '');
-        if (idx === 0 || idx === 1) return null; // let table structure be hand-parsed or render as simple rows
-        return (
-          <div key={idx} className="grid grid-cols-5 gap-2 py-1.5 px-2 bg-slate-950/20 border-b border-border/40 text-[10px] text-slate-300 font-mono">
-            {cells.map((cell, cIdx) => (
-              <span key={cIdx} className={cIdx === 0 ? "font-bold text-slate-200" : ""}>{cell}</span>
-            ))}
-          </div>
-        );
-      }
-      // Regular paragraph
-      return line.trim() !== '' ? <p key={idx} className="text-xs text-slate-300 leading-relaxed my-1 font-sans">{line}</p> : <div key={idx} className="h-2"></div>;
-    });
+  }  // Helper to render AI response markdown using react-markdown with GFM support.
+  const renderMarkdown = (text) => {
+    if (!text) return null;
+    const resolved = resolveSlackMentions(text);
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        className="prose prose-sm max-w-none text-slate-300"
+        components={{
+          // Override default elements to match our design system
+          h3: ({node, ...props}) => <h3 className="text-sm font-bold text-white mt-4 mb-2 flex items-center gap-1.5" {...props} />, 
+          h4: ({node, ...props}) => <h4 className="text-xs font-bold text-indigo-300 mt-3 mb-1" {...props} />, 
+          blockquote: ({node, ...props}) => (
+            <div className="my-2.5 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-indigo-300 text-xs italic font-medium leading-relaxed" {...props} />
+          ),
+          li: ({node, ordered, ...props}) => (
+            <li className="text-xs text-slate-300 ml-4 list-disc py-0.5 leading-relaxed" {...props} />
+          ),
+          table: ({node, ...props}) => (
+            <div className="overflow-x-auto my-2"><table className="border-collapse border border-slate-700" {...props} /></div>
+          ),
+          th: ({node, ...props}) => (
+            <th className="px-2 py-1 border border-slate-600 bg-slate-800 font-bold text-slate-200" {...props} />
+          ),
+          td: ({node, ...props}) => (
+            <td className="px-2 py-1 border border-slate-600 text-slate-300" {...props} />
+          ),
+          p: ({node, ...props}) => (
+            <p className="text-xs text-slate-300 leading-relaxed my-1 font-sans" {...props} />
+          )
+        }}
+      >
+        {resolved}
+      </ReactMarkdown>
+    );
   };
 
   return (
@@ -152,10 +136,10 @@ I am your contextual engineering operations partner. I retrieve real-time docume
                       ? 'bg-slate-900/50 border border-slate-800/80 text-slate-300 rounded-tl-sm' 
                       : 'bg-indigo-600 text-white rounded-tr-sm ml-auto'
                   }`}>
-                    {/* Render Formatted Markdown */}
-                    <div className="space-y-1">
-                      {isAI ? formatText(msg.text) : <p className="leading-relaxed font-sans">{msg.text}</p>}
-                    </div>
+                     {/* Render AI response as Markdown */}
+                     <div className="space-y-1">
+                       {isAI ? renderMarkdown(msg.text) : <p className="leading-relaxed font-sans">{msg.text}</p>}
+                     </div>
 
                     {/* Mode tag */}
                     {isAI && msg.mode && (
@@ -282,7 +266,7 @@ I am your contextual engineering operations partner. I retrieve real-time docume
             </div>
           ) : standupText ? (
             <div className="space-y-3 p-4 bg-slate-950/45 rounded-xl border border-slate-900 font-mono text-[11px] text-slate-300 leading-relaxed overflow-y-auto max-h-[300px]">
-              {formatText(standupText)}
+              {renderMarkdown(standupText)}
             </div>
           ) : (
             <div className="py-20 text-center flex flex-col items-center justify-center space-y-3">
