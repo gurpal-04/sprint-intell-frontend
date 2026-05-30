@@ -20,7 +20,11 @@ import {
 } from 'recharts';
 
 export default function DashboardView({ setActiveTab }) {
-  const { sprintData, loading, error } = useSprint();
+  const { sprintData, loading, error, fetchOverviewData } = useSprint();
+
+  React.useEffect(() => {
+    fetchOverviewData();
+  }, []);
 
   if (error) {
     return (

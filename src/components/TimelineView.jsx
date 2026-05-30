@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSprint } from '../context/SprintContext';
 import { 
   GitPullRequest, 
@@ -10,7 +10,11 @@ import {
 } from 'lucide-react';
 
 export default function TimelineView() {
-  const { sprintData, loading } = useSprint();
+  const { sprintData, loading, fetchTimelineData } = useSprint();
+
+  useEffect(() => {
+    fetchTimelineData();
+  }, []);
 
   if (loading || !sprintData) {
     return (

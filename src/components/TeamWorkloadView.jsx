@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSprint } from '../context/SprintContext';
 import { Users, ShieldAlert, BookOpen, Layers, CheckSquare } from 'lucide-react';
 import { 
@@ -12,7 +12,11 @@ import {
 } from 'recharts';
 
 export default function TeamWorkloadView() {
-  const { sprintData, loading } = useSprint();
+  const { sprintData, loading, fetchTeamData } = useSprint();
+
+  useEffect(() => {
+    fetchTeamData();
+  }, []);
 
   if (loading || !sprintData) {
     return (

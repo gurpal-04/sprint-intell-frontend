@@ -7,7 +7,7 @@ import DashboardView from './components/DashboardView';
 import SprintInsightsView from './components/SprintInsightsView';
 import RiskAnalysisView from './components/RiskAnalysisView';
 import TeamWorkloadView from './components/TeamWorkloadView';
-import AIChatView from './components/AIChatView';
+import ChatTabView from './components/ChatTabView';
 import TimelineView from './components/TimelineView';
 import SettingsView from './components/SettingsView';
 import CoralConsoleView from './components/CoralConsoleView';
@@ -57,7 +57,7 @@ export default function App() {
                 <Route path="/coral-sql" element={<PageWrapper><CoralConsoleView /></PageWrapper>} />
                 <Route path="/risks" element={<PageWrapper><RiskAnalysisView /></PageWrapper>} />
                 <Route path="/workload" element={<PageWrapper><TeamWorkloadView /></PageWrapper>} />
-                <Route path="/chat" element={<PageWrapper><AIChatView /></PageWrapper>} />
+                <Route path="/chat" element={<PageWrapper><ChatTabView /></PageWrapper>} />
                 <Route path="/timeline" element={<PageWrapper><TimelineView /></PageWrapper>} />
                 <Route path="/settings" element={<PageWrapper><SettingsView /></PageWrapper>} />
                 <Route path="*" element={<Navigate to="/" replace />} />

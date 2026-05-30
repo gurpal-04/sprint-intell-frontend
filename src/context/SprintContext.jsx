@@ -7,7 +7,28 @@ export const useSprint = () => useContext(SprintContext);
 const BACKEND_URL = "https://sprint-intell-backend.onrender.com";
 
 export const SprintProvider = ({ children }) => {
-  const [sprintData, setSprintData] = useState(null);
+  const [sprintData, setSprintData] = useState({
+    healthScore: 100,
+    scenarioName: "Loading Data",
+    scenarioDescription: "",
+    metrics: {
+      blockedTasks: 0,
+      openPRs: 0,
+      stalePRs: 0,
+      staleTasks: 0,
+      activeIncidents: 0,
+      overloadedEngineers: 0,
+      donePoints: 0,
+      totalPoints: 0,
+      velocity: 0
+    },
+    issues: [],
+    prs: [],
+    team: [],
+    timeline: [],
+    blockers: []
+  });
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
@@ -16,44 +37,112 @@ export const SprintProvider = ({ children }) => {
   const [standupLoading, setStandupLoading] = useState(false);
   const [slackUsers, setSlackUsers] = useState([]);
 
-  const fetchSprintData = async () => {
+  // Dynamic status states to prevent re-fetching assets unnecessarily
+  const [loadedViews, setLoadedViews] = useState({
+    overview: false,
+    issues: false,
+    prs: false,
+    team: false,
+    timeline: false,
+    blockers: false
+  });
+
+  // Base loader helper
+  const loadResource = async (type, endpoint) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/sprint/${endpoint}`);
+      if (!response.ok) throw new Error(`Failed to load ${type}`);
+      const data = await response.json();
+      
+      setSprintData(prev => {
+        if (type === 'overview') {
+          return {
+            ...prev,
+            healthScore: data.healthScore,
+            scenarioName: data.scenarioName,
+            scenarioDescription: data.scenarioDescription,
+            metrics: data.metrics
+          };
+        }
+        return {
+          ...prev,
+          [type]: data
+        };
+      });
+      
+      setLoadedViews(prev => ({ ...prev, [type]: true }));
+    } catch (err) {
+      console.error(`Error loading resource ${type}:`, err.message);
+      setError(`Sprint Intelligence API connection failed for endpoint: ${endpoint}`);
+    }
+  };
+
+  // On-demand loader functions called selectively by components on mount
+  const fetchOverviewData = async (force = false) => {
+    if (loadedViews.overview && !force) return;
+    setLoading(true);
+    await loadResource('overview', 'overview');
+    setLoading(false);
+  };
+
+  const fetchIssuesData = async (force = false) => {
+    if (loadedViews.issues && !force) return;
+    setLoading(true);
+    await loadResource('issues', 'issues');
+    // Lazy pull-requests load since it projects into issues or metrics
+    await loadResource('prs', 'pull-requests');
+    setLoading(false);
+  };
+
+  const fetchTeamData = async (force = false) => {
+    if (loadedViews.team && !force) return;
+    setLoading(true);
+    await loadResource('team', 'team');
+    setLoading(false);
+  };
+
+  const fetchTimelineData = async (force = false) => {
+    if (loadedViews.timeline && !force) return;
+    setLoading(true);
+    await loadResource('timeline', 'timeline');
+    setLoading(false);
+  };
+
+  const fetchBlockersData = async (force = false) => {
+    if (loadedViews.blockers && !force) return;
+    setLoading(true);
+    await loadResource('blockers', 'blockers');
+    setLoading(false);
+  };
+
+  // Global initializers (Overview metrics + Slack users for chat matching)
+  const initializeWorkspace = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch all sprint metrics, issues, pull requests, team allocations, timeline, blockers and slack users consolidated
-      const response = await fetch(`${BACKEND_URL}/api/sprint/bootstrap`);
-
-      if (!response.ok) {
-        throw new Error("Failed to connect to backend Sprint Intelligence bootstrap endpoint.");
-      }
-
-      const data = await response.json();
-
-      if (data.slackUsers) {
-        setSlackUsers(data.slackUsers);
-      }
-
-      setSprintData({
-        healthScore: data.overview.healthScore,
-        scenarioName: data.overview.scenarioName,
-        scenarioDescription: data.overview.scenarioDescription,
-        metrics: data.overview.metrics,
-        issues: data.issues || [],
-        prs: data.prs || [],
-        team: data.team || [],
-        timeline: data.timeline || [],
-        blockers: data.blockers || []
+      // Fetch core overview data first
+      await loadResource('overview', 'overview');
+      
+      // Load slack users for chat context matching
+      const slackRes = await fetch(`${BACKEND_URL}/api/coral/sql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "SELECT id, name, real_name, display_name, email FROM slack.users" })
       });
+      if (slackRes.ok) {
+        const usersData = await slackRes.json();
+        setSlackUsers(usersData.rows || []);
+      }
     } catch (err) {
-      console.error("Backend server connection failed:", err.message);
-      setError("Sprint Intelligence Express API connection failed. Ensure the server is running on port 5001 and your local Coral CLI is connected.");
+      console.error("Workspace init failed:", err.message);
+      setError("Failed to initialize active Coral workspace connection. Verify port 5001 backend service status.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSprintData();
+    initializeWorkspace();
   }, []);
 
   const resolveSlackMentions = (text) => {
@@ -163,7 +252,11 @@ export const SprintProvider = ({ children }) => {
       standupLoading,
       slackUsers,
       resolveSlackMentions,
-      fetchSprintData,
+      fetchOverviewData,
+      fetchIssuesData,
+      fetchTeamData,
+      fetchTimelineData,
+      fetchBlockersData,
       askAIChat,
       triggerStandupGeneration,
       setChatMessages,

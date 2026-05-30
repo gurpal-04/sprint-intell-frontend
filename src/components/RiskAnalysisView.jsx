@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSprint } from '../context/SprintContext';
 import { 
   AlertOctagon, 
@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 
 export default function RiskAnalysisView() {
-  const { sprintData, loading } = useSprint();
+  const { sprintData, loading, fetchBlockersData } = useSprint();
+
+  useEffect(() => {
+    fetchBlockersData();
+  }, []);
 
   if (loading || !sprintData) {
     return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSprint } from '../context/SprintContext';
 import { 
   Layers, 
@@ -11,8 +11,12 @@ import {
 } from 'lucide-react';
 
 export default function SprintInsightsView() {
-  const { sprintData, loading } = useSprint();
+  const { sprintData, loading, fetchIssuesData } = useSprint();
   const [activeTab, setActiveTab] = useState('issues');
+
+  useEffect(() => {
+    fetchIssuesData();
+  }, []);
 
   if (loading || !sprintData) {
     return (
