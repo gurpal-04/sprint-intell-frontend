@@ -4,7 +4,7 @@ const SprintContext = createContext();
 
 export const useSprint = () => useContext(SprintContext);
 
-const BACKEND_URL = "http://localhost:5001";
+const BACKEND_URL = "https://sprint-intell-backend.onrender.com/";
 
 export const SprintProvider = ({ children }) => {
   const [sprintData, setSprintData] = useState(null);
@@ -14,19 +14,21 @@ export const SprintProvider = ({ children }) => {
   const [chatLoading, setChatLoading] = useState(false);
   const [standupText, setStandupText] = useState("");
   const [standupLoading, setStandupLoading] = useState(false);
+  const [slackUsers, setSlackUsers] = useState([]);
 
   const fetchSprintData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch dynamic live metrics, issues, pull requests, team allocations, and event timeline from Node API
-      const [overviewRes, issuesRes, prsRes, teamRes, timelineRes, blockersRes] = await Promise.all([
+      // Fetch dynamic live metrics, issues, pull requests, team allocations, timeline, blockers and slack users
+      const [overviewRes, issuesRes, prsRes, teamRes, timelineRes, blockersRes, usersRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/sprint/overview`),
         fetch(`${BACKEND_URL}/api/sprint/issues`),
         fetch(`${BACKEND_URL}/api/sprint/pull-requests`),
         fetch(`${BACKEND_URL}/api/sprint/team`),
         fetch(`${BACKEND_URL}/api/sprint/timeline`),
-        fetch(`${BACKEND_URL}/api/sprint/blockers`)
+        fetch(`${BACKEND_URL}/api/sprint/blockers`),
+        fetch(`${BACKEND_URL}/api/slack/users`)
       ]);
 
       if (!overviewRes.ok || !issuesRes.ok || !prsRes.ok || !teamRes.ok || !timelineRes.ok || !blockersRes.ok) {
@@ -39,6 +41,11 @@ export const SprintProvider = ({ children }) => {
       const team = await teamRes.json();
       const timeline = await timelineRes.json();
       const blockers = await blockersRes.json();
+
+      if (usersRes.ok) {
+        const users = await usersRes.json();
+        setSlackUsers(users);
+      }
 
       setSprintData({
         healthScore: overview.healthScore,
@@ -62,6 +69,27 @@ export const SprintProvider = ({ children }) => {
   useEffect(() => {
     fetchSprintData();
   }, []);
+
+  const resolveSlackMentions = (text) => {
+    if (!text) return "";
+    let resolvedText = text;
+    
+    // Replace <@U12345> style mentions
+    const userMentionRegex = /<@([A-Z0-9]+)>/g;
+    resolvedText = resolvedText.replace(userMentionRegex, (match, userId) => {
+      const user = slackUsers.find(u => u.id === userId);
+      return user ? `@${user.real_name || user.display_name || user.name}` : `@${userId}`;
+    });
+
+    // Replace raw @U12345 style mentions
+    const rawMentionRegex = /@([A-Z0-9]{8,12})/g;
+    resolvedText = resolvedText.replace(rawMentionRegex, (match, userId) => {
+      const user = slackUsers.find(u => u.id === userId);
+      return user ? `@${user.real_name || user.display_name || user.name}` : `@${userId}`;
+    });
+
+    return resolvedText;
+  };
 
   const askAIChat = async (userQuery) => {
     setChatLoading(true);
@@ -147,6 +175,8 @@ export const SprintProvider = ({ children }) => {
       chatLoading,
       standupText,
       standupLoading,
+      slackUsers,
+      resolveSlackMentions,
       fetchSprintData,
       askAIChat,
       triggerStandupGeneration,

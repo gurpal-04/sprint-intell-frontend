@@ -20,7 +20,8 @@ export default function AIChatView() {
     standupText, 
     standupLoading, 
     triggerStandupGeneration,
-    setChatMessages
+    setChatMessages,
+    resolveSlackMentions
   } = useSprint();
 
   const [input, setInput] = useState('');
@@ -75,8 +76,10 @@ I am your contextual engineering operations partner. I retrieve real-time docume
   const formatText = (text) => {
     if (!text) return "";
     
+    const resolvedText = resolveSlackMentions(text);
+    
     // Incredibly simple markdown renderer for clean, professional bullet points, tables, and blocks
-    return text.split('\n').map((line, idx) => {
+    return resolvedText.split('\n').map((line, idx) => {
       // Heading 3
       if (line.startsWith('### ')) {
         return <h3 key={idx} className="text-sm font-bold text-white mt-4 mb-2 flex items-center gap-1.5">{line.substring(4)}</h3>;
