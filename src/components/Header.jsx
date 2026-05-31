@@ -15,7 +15,7 @@ export default function Header() {
               Sprint 1
             </span>
             <span className="text-slate-500 text-xs">|</span>
-            <span className="text-slate-400 text-xs font-medium">May 24 - May 31</span>
+            <span className="text-slate-400 text-xs font-medium">May 26 - June 2</span>
           </div>
           <h2 className="text-sm font-semibold text-gray-200 mt-0.5 truncate max-w-[280px]">
             {sprintData?.scenarioDescription || "Sprint Intelligence Control"}

@@ -152,7 +152,7 @@ export default function DashboardView({ setActiveTab }) {
                 strokeLinecap="round"
               />
             </svg>
-            <span className="absolute text-slate-500 font-semibold font-mono text-[9px]">S24</span>
+            <span className="absolute text-slate-500 font-semibold font-mono text-[9px]">S-01</span>
           </div>
         </div>
 

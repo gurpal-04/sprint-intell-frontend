@@ -53,13 +53,9 @@ export default function TimelineView() {
         <p className="text-slate-400 text-xs mt-0.5">Visually connect cross-system events (PR merge → staging deploy → build failure → Slack triage).</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-220px)]">
         {/* Main Vertical Timeline */}
-        <div className="glass-card p-6 rounded-2xl lg:col-span-2 space-y-6 relative overflow-hidden">
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-200">System Logs Linkage</h3>
-            <p className="text-[11px] text-slate-400">Time-series cross-platform correlation logs for Sprint 24.</p>
-          </div>
+        <div className="glass-card p-6 rounded-2xl lg:col-span-3 space-y-6 relative overflow-y-auto">
 
           {timeline.length === 0 ? (
             <div className="py-20 text-center text-xs text-slate-500 font-medium">
@@ -115,7 +111,7 @@ export default function TimelineView() {
         </div>
 
         {/* Informative Side Panel explaining cause-and-effect */}
-        <div className="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
+        {/* <div className="glass-card p-6 rounded-2xl flex flex-col justify-between space-y-4">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-indigo-400">
               <Info className="w-5 h-5" />
@@ -150,7 +146,7 @@ export default function TimelineView() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

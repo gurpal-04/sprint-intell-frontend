@@ -38,13 +38,13 @@ export default function TeamWorkloadView() {
   }));
 
   const getWorkloadProgressColor = (score) => {
-    if (score >= 90) return 'bg-red-500';
+    if (score >= 85) return 'bg-red-500';
     if (score >= 70) return 'bg-amber-500';
     return 'bg-emerald-500';
   };
 
   const getWorkloadTextStatus = (score, status) => {
-    if (score >= 90) return 'Critical Load';
+    if (score >= 85) return 'Critical Load';
     if (score >= 70) return 'High Load';
     if (status === "Out Sick") return 'Out Sick';
     return 'Healthy Capacity';
@@ -99,14 +99,14 @@ export default function TeamWorkloadView() {
               <span className="text-slate-400 flex items-center gap-1.5">
                 <ShieldAlert className="w-4 h-4 text-red-400" /> Overloaded Engineers
               </span>
-              <span className="font-bold text-red-400">{team.filter(e => e.workloadScore >= 90).length}</span>
+              <span className="font-bold text-red-400">{team.filter(e => e.workloadScore >= 85).length}</span>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-900 flex justify-between items-center text-xs">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-indigo-400" /> Combined Pending Reviews
               </span>
               <span className="font-bold text-indigo-300">
-                {team.reduce((acc, e) => acc + e.pendingReviews, 0)} open
+                {team.reduce((acc, e) => acc + e.pendingReviews, 1)} open
               </span>
             </div>
           </div>
@@ -116,7 +116,7 @@ export default function TeamWorkloadView() {
       {/* Team Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {team.map((eng) => {
-          const isOverloaded = eng.workloadScore >= 90;
+          const isOverloaded = eng.workloadScore >= 85;
           return (
             <div 
               key={eng.id} 

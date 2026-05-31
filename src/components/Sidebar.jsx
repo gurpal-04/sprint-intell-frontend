@@ -14,7 +14,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'insights', label: 'Sprint Insights', icon: Layers },
-    // { id: 'coral-sql', label: 'Coral SQL Sandbox', icon: Terminal },
     { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
     { id: 'workload', label: 'Team Workload', icon: Users },
     { id: 'chat', label: 'AI Chat Ops', icon: MessageSquare },
@@ -26,7 +25,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   return (
     <aside className="w-64 bg-card/60 border-r border-border backdrop-blur-xl flex flex-col h-screen fixed left-0 top-0 z-20">
       {/* Brand Header */}
-      <div className="p-6 border-b border-border flex items-center gap-3">
+      <div className="p-5 h-20 border-b border-border flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-glow neon-glow-indigo">
           <Terminal className="w-5 h-5 text-white" />
         </div>
