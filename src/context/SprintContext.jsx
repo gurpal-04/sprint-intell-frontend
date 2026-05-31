@@ -100,17 +100,76 @@ export const SprintProvider = ({ children }) => {
     if (loadedViews.slackLogs && !force) return;
     setLoading(true);
     try {
-      // Query Slack messages using Coral SQL
+      // 1. Resolve 'sprint-1-dev' channel name to its unique ID
+      const channelRes = await fetch(`${BACKEND_URL}/api/coral/sql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "SELECT id FROM slack.channels WHERE name = 'sprint-1-dev' LIMIT 1" })
+      });
+      
+      let channelId = null;
+      if (channelRes.ok) {
+        const channelData = await channelRes.json();
+        if (channelData.rows && channelData.rows.length > 0) {
+          channelId = channelData.rows[0].id;
+        }
+      }
+
+      if (!channelId) {
+        console.warn("[Sprint Context] 'sprint-1-dev' channel ID not found, using raw query fallback.");
+      }
+
+      // 2. Load slack users first if not loaded in memory to ensure ID resolution works 100%
+      let activeUsers = [...slackUsers];
+      if (activeUsers.length === 0) {
+        const slackRes = await fetch(`${BACKEND_URL}/api/coral/sql`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: "SELECT id, name, real_name, display_name, email FROM slack.users" })
+        });
+        if (slackRes.ok) {
+          const usersData = await slackRes.json();
+          activeUsers = usersData.rows || [];
+          setSlackUsers(activeUsers);
+        }
+      }
+
+      // 3. Query Coral's parameterized slack.messages function using the resolved ID
+      const slackQuery = channelId 
+        ? `SELECT '${channelId}' AS channel, m.user_id AS sender, m.text AS message, m.ts AS timestamp FROM slack.messages(channel => '${channelId}') m ORDER BY m.ts DESC LIMIT 30`
+        : `SELECT channel, sender, message, timestamp FROM slack.messages LIMIT 10`; // Fallback projection
+
       const response = await fetch(`${BACKEND_URL}/api/coral/sql`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: "SELECT channel, sender, message, timestamp FROM slack.messages ORDER BY timestamp DESC LIMIT 30" })
+        body: JSON.stringify({ query: slackQuery })
       });
+
       if (response.ok) {
         const result = await response.json();
+        
+        // Resolve user display handles
+        const resolvedLogs = (result.rows || []).map(log => {
+          const user = activeUsers.find(u => u.id === log.sender);
+          const handle = user ? `@${user.real_name || user.display_name || user.name}` : log.sender || "@unknown";
+          
+          // Parse Slack float ts string to ISO Date if available
+          let parsedTime = log.timestamp;
+          if (log.timestamp && !isNaN(log.timestamp)) {
+            parsedTime = new Date(parseFloat(log.timestamp) * 1000).toISOString();
+          }
+
+          return {
+            channel: "#sprint-1-dev",
+            sender: handle,
+            message: resolveSlackMentions(log.message || log.text || "", activeUsers),
+            timestamp: parsedTime || new Date().toISOString()
+          };
+        });
+
         setSprintData(prev => ({
           ...prev,
-          slackLogs: result.rows || []
+          slackLogs: resolvedLogs
         }));
         setLoadedViews(prev => ({ ...prev, slackLogs: true }));
       }
@@ -172,21 +231,22 @@ export const SprintProvider = ({ children }) => {
     initializeWorkspace();
   }, []);
 
-  const resolveSlackMentions = (text) => {
+  const resolveSlackMentions = (text, customUsers = null) => {
     if (!text) return "";
     let resolvedText = text;
+    const usersList = customUsers || slackUsers;
     
     // Replace <@U12345> style mentions
     const userMentionRegex = /<@([A-Z0-9]+)>/g;
     resolvedText = resolvedText.replace(userMentionRegex, (match, userId) => {
-      const user = slackUsers.find(u => u.id === userId);
+      const user = usersList.find(u => u.id === userId);
       return user ? `@${user.real_name || user.display_name || user.name}` : `@${userId}`;
     });
 
     // Replace raw @U12345 style mentions
     const rawMentionRegex = /@([A-Z0-9]{8,12})/g;
     resolvedText = resolvedText.replace(rawMentionRegex, (match, userId) => {
-      const user = slackUsers.find(u => u.id === userId);
+      const user = usersList.find(u => u.id === userId);
       return user ? `@${user.real_name || user.display_name || user.name}` : `@${userId}`;
     });
 
